@@ -3,13 +3,13 @@
 	"id": "aurum",
 	"version": "${version}",
 	"name": "Aurum",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Piglins accept gold blocks as barter currency and give loot from a higher-tier, datapack-configurable loot table.",
 	"authors": [
-		"Me!"
+		"maihatsuu"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/maihatsuu/aurum",
+		"issues": "https://github.com/maihatsuu/aurum/issues"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/aurum/icon.png",
@@ -17,17 +17,10 @@
 	"entrypoints": {
 		"main": [
 			"maihatsuu.aurum.Aurum"
-		],
-		"client": [
-			"maihatsuu.aurum.client.AurumClient"
 		]
 	},
 	"mixins": [
-		"aurum.mixins.json",
-		{
-			"config": "aurum.client.mixins.json",
-			"environment": "client"
-		}
+		"aurum.mixins.json"
 	],
 	"depends": {
 		"fabricloader": ">=0.20.1",

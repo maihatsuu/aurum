@@ -3,7 +3,7 @@
 	"package": "maihatsuu.aurum.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"PiglinAiMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

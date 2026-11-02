@@ -4,32 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Aurum is a Fabric mod for Minecraft 1.21.1 (Java 21, Mojang official mappings, mod id `aurum`, package `maihatsuu.aurum`). Its single goal is to let **piglins accept a gold block as barter currency** and roll a separate, higher-tier loot table. The design doc is `../piglin-barter-mod-plan.md`; read it before implementing features. Loot pool numbers are being drafted in `../Gold Block Bartering Loot Tables.xlsx`.
-
-The repo is currently the unmodified Fabric example-mod template (`ExampleMixin`, `ExampleClientMixin`, placeholder `fabric.mod.json` description/authors/contact). Replace those as real code lands.
+Aurum is a Fabric mod for Minecraft 1.21.1 (Java 21, Mojang official mappings, mod id `aurum`, package `maihatsuu.aurum`). Piglins accept a **gold block** as barter currency and roll a separate, higher-tier loot table. The original design doc is `../piglin-barter-mod-plan.md` (outside the repo). Loot numbers were drafted in `../Gold Block Bartering Loot Tables.xlsx`. In that sheet Excel turned count ranges into dates, e.g. 46120 = "4-8".
 
 ## Commands
 
 ```bash
 ./gradlew build          # compile + remap; jar in build/libs/
-./gradlew runServer      # dedicated dev server (run/ directory)
-./gradlew runClient      # dev client
-./gradlew genSources     # decompile MC sources for browsing/verifying method names
+./gradlew runClient      # dev client (run/ directory, gitignored)
+./gradlew runServer      # dev dedicated server
+./gradlew genSources     # decompile MC sources for verifying method names
 ```
 
-There is no test suite configured. CI (`.github/workflows/build.yml`) just runs `./gradlew build`.
+There is no test suite. CI (`.github/workflows/build.yml`) runs `./gradlew build`. A successful build does **not** validate mixin targets. They're only checked when `PiglinAi` loads at runtime (for example when a piglin spawns), and `defaultRequire: 1` makes a missed injector crash the game.
 
-## Architecture / intended design
+## Architecture
 
-- **Server-side only.** No client code is needed; vanilla clients must be able to join. Keep logic in `src/main`. The `src/client` source set (from Loom `splitEnvironmentSourceSets()`) and `aurum.client.mixins.json` exist only because of the template. They can be removed, along with the `client` entrypoint and client mixin config in `fabric.mod.json`.
-- **Hook points are in `net.minecraft.world.entity.monster.piglin.PiglinAi`** (Mojang names):
-  - `isBarterCurrency(ItemStack)`: extend to accept items in the tag `aurum:high_tier_barter_currency` (contains `minecraft:gold_block`).
-  - `getBarterResponseItems` / `stopHoldingOffHandItem`: pick the loot table by the offhand item. Use `aurum:gameplay/piglin_bartering_high_tier` for the currency tag and vanilla `BuiltInLootTables.PIGLIN_BARTERING` for everything else.
-  - Check that `pickUpItem` and `mobInteract` send gold blocks down the barter path (offhand + admire), not the "loved item kept in inventory" path. Gold blocks are already in `ItemTags.PIGLIN_LOVED`.
-  - Verify these names against 1.21.1 sources (`genSources`) before writing mixins. The plan explicitly flags them as unverified.
-- **Data-driven tuning.** The currency is an item tag (`data/aurum/tags/item/high_tier_barter_currency.json`) and the loot is a loot table (`data/aurum/loot_table/gameplay/piglin_bartering_high_tier.json`; 1.21 uses singular `loot_table`/`item` folder names). Look up the loot table by `ResourceKey` on every barter; never cache it, so datapack overrides and `/reload` take effect. An empty table is valid (the piglin takes the block and gives nothing).
-- **Mixin compatibility.** Other mods also mix into `PiglinAi`. Use `@Inject`, `@ModifyReturnValue`, or `@WrapOperation` (MixinExtras ships with Fabric Loader), never `@Overwrite`. Mixin configs set `defaultRequire: 1`, so an injector that matches nothing fails at startup.
-- **Invariants to keep:** baby piglins and brutes don't barter; vanilla barter advancements still trigger; only one block is taken from a stack.
-- **Config (later):** a simple JSON config with an on/off toggle (plus cooldown settings if one is added). Cloth Config/YACL and Mod Menu are optional extras only.
+The mod is server-side only. There is a single source set (the template's `src/client` was removed), so vanilla clients can join.
 
-Suggested build order (from the plan): currency acceptance with the vanilla table, then a separate table, then verify a datapack override + `/reload`, then fill and tune the pool, then edge cases/cooldown, then config.
+All behaviour lives in `mixin/PiglinAiMixin.java`, with two hooks into `net.minecraft.world.entity.monster.piglin.PiglinAi`:
+
+1. **`@ModifyReturnValue` on `isBarterCurrency`.** This is the single gate vanilla uses for right-click hand-over (`canAdmire` → `mobInteract`), ground pickup (`wantsToPickup`/`pickUpItem`), and the barter-vs-keep decision in `stopHoldingOffHandItem`. Returning true for the tag `aurum:high_tier_barter_currency` gives you all three. Vanilla already takes one item at a time, and already excludes babies (`isAdult`) and brutes (which use `PiglinBruteAi`).
+2. **`@WrapOperation` on the `getBarterResponseItems(Piglin)` call inside `stopHoldingOffHandItem`.** Vanilla clears the offhand *before* it calls `getBarterResponseItems`, so the bartered stack is only available as a local at that call site (captured with MixinExtras `@Local`). A high-tier stack rolls `Aurum.HIGH_TIER_BARTER_LOOT`, looked up in `reloadableRegistries()` on every barter so datapack overrides and `/reload` apply. Don't cache it.
+
+Tuning is done in data, not code. The tag is `data/aurum/tags/item/high_tier_barter_currency.json` and the table is `data/aurum/loot_table/gameplay/piglin_bartering_high_tier.json` (type `minecraft:barter`; 1.21 uses singular folder names). An empty table is valid: the piglin takes the block and gives nothing.
+
+`AurumConfig` reads `config/aurum.json` (`{"enabled": true}`) once at startup with Gson. A malformed file falls back to defaults and isn't overwritten.
+
+Other mods also mix into `PiglinAi`. Use `@Inject`, `@ModifyReturnValue`, or `@WrapOperation`, never `@Overwrite`.

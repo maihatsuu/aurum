@@ -6,7 +6,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 
 import maihatsuu.aurum.Aurum;
-import maihatsuu.aurum.AurumConfig;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.monster.piglin.Piglin;
@@ -30,7 +29,7 @@ public abstract class PiglinAiMixin {
 	 */
 	@ModifyReturnValue(method = "isBarterCurrency", at = @At("RETURN"))
 	private static boolean aurum$acceptHighTierCurrency(boolean original, ItemStack stack) {
-		return original || (AurumConfig.enabled() && stack.is(Aurum.HIGH_TIER_BARTER_CURRENCY));
+		return original || stack.is(Aurum.HIGH_TIER_BARTER_CURRENCY);
 	}
 
 	/**

@@ -32,18 +32,6 @@ Both the currency and the loot are plain data files, and a datapack can override
 
 Changes apply after `/reload`. If the loot table is empty, the piglin takes the block and gives nothing back.
 
-## Config
-
-`config/aurum.json` is created on first launch:
-
-```json
-{
-  "enabled": true
-}
-```
-
-Set `enabled` to `false` and restart to turn off gold block bartering. Piglins then go back to keeping gold blocks, as in vanilla.
-
 ## Requirements
 
 - Minecraft 1.21.1

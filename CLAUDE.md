@@ -28,6 +28,6 @@ All behaviour lives in `mixin/PiglinAiMixin.java`, with two hooks into `net.mine
 
 Tuning is done in data, not code. The tag is `data/aurum/tags/item/high_tier_barter_currency.json` and the table is `data/aurum/loot_table/gameplay/piglin_bartering_high_tier.json` (type `minecraft:barter`; 1.21 uses singular folder names). An empty table is valid: the piglin takes the block and gives nothing.
 
-`AurumConfig` reads `config/aurum.json` (`{"enabled": true}`) once at startup with Gson. A malformed file falls back to defaults and isn't overwritten.
+There is no config file. To disable or retune the feature, change the tag or the table with a datapack (an empty tag turns the feature off).
 
 Other mods also mix into `PiglinAi`. Use `@Inject`, `@ModifyReturnValue`, or `@WrapOperation`, never `@Overwrite`.

@@ -26,7 +26,6 @@ public class Aurum implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		AurumConfig.load();
 	}
 
 	public static ResourceLocation id(String path) {
